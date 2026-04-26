@@ -1,74 +1,70 @@
 """
 pages/3_Predictions.py — Live Predictions
-──────────────────────────────────────────
-Threshold slider · crash probability timeline · risk table · CSV download.
+───────────────────────────────────────────
+Risk gauge · threshold slider · crash probability timeline · risk table · CSV.
+CSS + sidebar injected by app.py.
 """
 
+import io
 import streamlit as st
 import pandas as pd
 import numpy as np
 
-st.set_page_config(
-    page_title="Predictions — Crash Predictor",
-    page_icon="🔮",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
-from assets.styles import inject_css, sidebar_header
 from core.features import FEATURE_COLS
-from core.charts import prediction_timeline
+from core.charts   import prediction_timeline, risk_gauge
+from assets.styles import ticker_tape
 
-inject_css()
-sidebar_header()
+ticker_tape()
 
-# ── Guard: need models trained ────────────────────────────────────────────────
+# ── Guard ─────────────────────────────────────────────────────────────────────
 if not st.session_state.get('models_trained'):
-    st.markdown("## 🔮 Predictions")
     st.markdown("""
-    <div class="warn-banner">
-    ⚠️ Models have not been trained yet. Please go to the <strong>Results</strong> page first
-    and click <em>Train All Models</em>.
-    </div>
-    """, unsafe_allow_html=True)
-
-    col_a, col_b = st.columns([1, 1])
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px;">
+      <span style="font-size:28px;">🔮</span>
+      <div>
+        <div style="font-size:22px;font-weight:800;color:#F0F4FF;letter-spacing:-0.5px;">Live Predictions</div>
+        <div style="font-size:13px;color:#6B7B8F;">Train models first to generate predictions</div>
+      </div>
+    </div>""", unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown('<div class="warn-banner">⚠ Models not trained yet. Go to <strong>Model Results</strong> and click <em>Train All Models</em>.</div>',
+                unsafe_allow_html=True)
+    col_a, col_b = st.columns(2)
     with col_a:
         if st.button("← Back to Upload", use_container_width=True):
             st.switch_page("pages/1_Upload.py")
     with col_b:
-        if st.button("Go to Results & Train →", use_container_width=True):
+        if st.button("Train Models →", use_container_width=True):
             st.switch_page("pages/2_Results.py")
     st.stop()
 
-# ── Pull data from session state ──────────────────────────────────────────────
-models   = st.session_state['models']
-metrics  = st.session_state['metrics']
-df_feat  = st.session_state['df_feat']
-test_df  = st.session_state.get('test_df', None)
-train_df = st.session_state.get('train_df', None)
+# ── Pull session state ────────────────────────────────────────────────────────
+models  = st.session_state['models']
+metrics = st.session_state['metrics']
+df_feat = st.session_state['df_feat']
 
-# ── Page header ───────────────────────────────────────────────────────────────
-st.markdown("## 🔮 Live Predictions")
-st.markdown(
-    "Adjust the decision threshold below to control sensitivity. "
-    "The crash probability timeline updates instantly — download your results as CSV when ready."
-)
+# ── Header ────────────────────────────────────────────────────────────────────
+st.markdown("""
+<div style="display:flex;align-items:center;gap:14px;margin-bottom:6px;">
+  <span style="font-size:28px;">🔮</span>
+  <div>
+    <div style="font-size:22px;font-weight:800;color:#F0F4FF;letter-spacing:-0.5px;">Live Predictions</div>
+    <div style="font-size:13px;color:#6B7B8F;">Adjust threshold · explore the probability timeline · download results</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 st.markdown("---")
 
-# ── Model selector + threshold slider ────────────────────────────────────────
+# ── Controls ──────────────────────────────────────────────────────────────────
 st.markdown('<div class="section-hdr"><h3>Prediction Settings</h3></div>', unsafe_allow_html=True)
+ctrl1, ctrl2, ctrl3 = st.columns([1, 2, 1])
 
-ctrl_col1, ctrl_col2, ctrl_col3 = st.columns([1, 2, 1])
-
-with ctrl_col1:
+with ctrl1:
     model_choice = st.selectbox(
-        "Select Model",
-        options=["Ensemble ★", "Random Forest", "XGBoost", "Logistic Regression", "Decision Tree"],
+        "Model",
+        ["Ensemble ★", "Random Forest", "XGBoost", "Logistic Regression", "Decision Tree"],
         index=0,
-        help="Ensemble combines LR + RF + XGBoost via soft voting.",
     )
-
 MODEL_NAME_MAP = {
     "Ensemble ★":         "ensemble",
     "Random Forest":       "rf",
@@ -76,60 +72,40 @@ MODEL_NAME_MAP = {
     "Logistic Regression": "lr",
     "Decision Tree":       "dt",
 }
-model_key = MODEL_NAME_MAP[model_choice]
-chosen_model = models[model_key]
-
-# Default threshold to the F1-optimal one stored in metrics
+model_key     = MODEL_NAME_MAP[model_choice]
+chosen_model  = models[model_key]
 default_thresh = float(metrics[model_key].get('threshold', 0.50))
 
-with ctrl_col2:
+with ctrl2:
     threshold = st.slider(
         "Decision Threshold",
-        min_value=0.05,
-        max_value=0.95,
-        value=default_thresh,
-        step=0.01,
-        help="Lower threshold → higher recall (catch more crashes, more false alarms). "
-             "Higher threshold → higher precision (fewer alerts, some crashes missed).",
+        min_value=0.05, max_value=0.95, value=default_thresh, step=0.01,
+        help="Lower → higher recall (catch more crashes, more false alarms). "
+             "Higher → higher precision (fewer alerts, some crashes missed).",
     )
-
-with ctrl_col3:
-    view_mode = st.selectbox(
-        "View",
-        options=["All Days", "High-Risk Only"],
-        index=0,
-    )
+with ctrl3:
+    view_mode = st.selectbox("Table View", ["All Days", "High-Risk Only"], index=0)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Build prediction dataframe for the ENTIRE dataset ─────────────────────────
+# ── Build prediction dataframe ────────────────────────────────────────────────
 @st.cache_data(show_spinner=False)
 def build_pred_df(df_json: str, model_key_inner: str) -> pd.DataFrame:
-    """Run chosen model on the full feature set and return prediction df."""
-    import json, io
     df = pd.read_json(io.StringIO(df_json))
-    # ensure date column is datetime
     if 'date' in df.columns:
         df['date'] = pd.to_datetime(df['date'])
-
-    X = df[FEATURE_COLS].values
-    model_obj = st.session_state['models'][model_key_inner]
-    proba = model_obj.predict_proba(X)[:, 1]
-
-    pred_df = pd.DataFrame({
+    X     = df[FEATURE_COLS].values
+    proba = st.session_state['models'][model_key_inner].predict_proba(X)[:, 1]
+    return pd.DataFrame({
         'date':         df['date'],
         'close':        df['close'],
         'crash_prob':   proba,
         'actual_crash': df['crash'].astype(int),
     })
-    return pred_df
-
 
 with st.spinner("Computing crash probabilities…"):
-    df_json = df_feat.to_json()
-    pred_df = build_pred_df(df_json, model_key)
+    pred_df = build_pred_df(df_feat.to_json(), model_key)
 
-# Apply threshold to get predicted labels
 pred_df['predicted_crash'] = (pred_df['crash_prob'] >= threshold).astype(int)
 pred_df['risk_level'] = pd.cut(
     pred_df['crash_prob'],
@@ -138,141 +114,153 @@ pred_df['risk_level'] = pd.cut(
     right=False,
 )
 
-# ── KPI summary row ───────────────────────────────────────────────────────────
+# ── Summary KPIs + Risk Gauge ─────────────────────────────────────────────────
 st.markdown('<div class="section-hdr"><h3>Prediction Summary</h3></div>', unsafe_allow_html=True)
 
-n_total     = len(pred_df)
-n_alerts    = int(pred_df['predicted_crash'].sum())
-n_actual    = int(pred_df['actual_crash'].sum())
-alert_rate  = n_alerts / n_total * 100
-correct_caught = int(
-    ((pred_df['predicted_crash'] == 1) & (pred_df['actual_crash'] == 1)).sum()
-)
-if n_actual > 0:
-    recall_pct = correct_caught / n_actual * 100
-else:
-    recall_pct = 0.0
+n_total    = len(pred_df)
+n_alerts   = int(pred_df['predicted_crash'].sum())
+n_actual   = int(pred_df['actual_crash'].sum())
+alert_rate = n_alerts / n_total * 100
+correct_caught = int(((pred_df['predicted_crash'] == 1) & (pred_df['actual_crash'] == 1)).sum())
+recall_pct = correct_caught / n_actual * 100 if n_actual > 0 else 0.0
+avg_prob   = float(pred_df['crash_prob'].mean())
+highest    = pred_df.loc[pred_df['crash_prob'].idxmax()]
 
-highest_risk_row = pred_df.loc[pred_df['crash_prob'].idxmax()]
-highest_risk_date = highest_risk_row['date'].strftime('%d %b %Y')
-highest_risk_prob = highest_risk_row['crash_prob']
+gauge_col, kpi_col = st.columns([1, 3])
 
-kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
-kpi1.metric("Total Days Analysed",  f"{n_total:,}")
-kpi2.metric("Crash Alerts Raised",  f"{n_alerts:,}", delta=f"{alert_rate:.1f}% of days")
-kpi3.metric("Actual Crash Days",    f"{n_actual:,}")
-kpi4.metric("Crashes Caught",       f"{correct_caught:,}", delta=f"{recall_pct:.1f}% recall")
-kpi5.metric("Highest Risk Day",     highest_risk_date, delta=f"Prob {highest_risk_prob:.3f}")
+with gauge_col:
+    st.plotly_chart(risk_gauge(avg_prob, model_choice), use_container_width=True)
+
+with kpi_col:
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Days Analysed",    f"{n_total:,}")
+    k2.metric("Crash Alerts",     f"{n_alerts:,}",     delta=f"{alert_rate:.1f}% of days")
+    k3.metric("Crashes Caught",   f"{correct_caught:,}", delta=f"{recall_pct:.1f}% recall")
+    k4.metric("Actual Crashes",   f"{n_actual:,}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Risk breakdown mini-bar
+    risk_counts = pred_df['risk_level'].value_counts()
+    rc1, rc2, rc3, rc4 = st.columns(4)
+    for col, label, cls in [
+        (rc1, '🟢 Low',       'risk-low'),
+        (rc2, '🟡 Medium',    'risk-medium'),
+        (rc3, '🟠 High',      'risk-high'),
+        (rc4, '🔴 Very High', 'risk-vhigh'),
+    ]:
+        cnt = int(risk_counts.get(label, 0))
+        pct = cnt / n_total * 100
+        with col:
+            st.markdown(f"""
+            <div style="background:#0F1629;border:1px solid rgba(255,255,255,0.06);
+                        border-radius:8px;padding:12px 14px;text-align:center;">
+                <div class="{cls}" style="font-size:18px;font-weight:700;">{cnt:,}</div>
+                <div style="font-size:10px;color:#6B7B8F;margin-top:3px;">{label} · {pct:.1f}%</div>
+            </div>""", unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div style="margin-top:10px; font-size:11px; color:#6B7B8F; font-family:'IBM Plex Mono',monospace;">
+    ⚡ Highest risk day: <strong style="color:#FF3366;">
+    {highest['date'].strftime('%d %b %Y')}</strong>
+    &nbsp;·&nbsp; prob = <strong style="color:#FF3366;">{highest['crash_prob']:.4f}</strong>
+    &nbsp;·&nbsp; actual crash = <strong>{'YES' if highest['actual_crash'] else 'NO'}</strong>
+    </div>""", unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Probability Timeline Chart ────────────────────────────────────────────────
+# ── Timeline ──────────────────────────────────────────────────────────────────
 st.markdown('<div class="section-hdr"><h3>Crash Probability Timeline</h3></div>', unsafe_allow_html=True)
 st.markdown(
-    f"Showing probabilities from **{model_choice}** · "
-    f"threshold = **{threshold:.2f}** · "
-    f"red dots = predicted crash alerts"
+    f'<span class="model-tag">{model_choice}</span>'
+    f'<span class="model-tag">THRESHOLD {threshold:.2f}</span>'
+    f'<span class="model-tag">F1-OPT {default_thresh:.2f}</span>'
+    f'<span style="font-size:12px;color:#6B7B8F;margin-left:6px;">'
+    f'Red dots = predicted crash alerts · Bottom panel: probability vs threshold</span>',
+    unsafe_allow_html=True,
 )
-
-fig_timeline = prediction_timeline(pred_df, threshold)
-st.plotly_chart(fig_timeline, use_container_width=True)
-st.caption(
-    "Top panel: closing price with red dots on high-risk days. "
-    "Bottom panel: crash probability with dashed threshold line. "
-    "Zoom / pan with the Plotly toolbar."
-)
+st.markdown("<br>", unsafe_allow_html=True)
+st.plotly_chart(prediction_timeline(pred_df, threshold), use_container_width=True)
 
 # ── Risk Table ────────────────────────────────────────────────────────────────
-st.markdown('<div class="section-hdr" style="margin-top:24px;"><h3>Prediction Table</h3></div>', unsafe_allow_html=True)
+st.markdown('<div class="section-hdr" style="margin-top:20px;"><h3>Prediction Table</h3></div>',
+            unsafe_allow_html=True)
+
+display_df = (pred_df[pred_df['predicted_crash'] == 1].copy()
+              if view_mode == "High-Risk Only" else pred_df.copy())
 
 if view_mode == "High-Risk Only":
-    display_df = pred_df[pred_df['predicted_crash'] == 1].copy()
-    st.markdown(
-        f'<div class="info-banner">Showing <strong>{len(display_df):,}</strong> high-risk days '
-        f'(threshold ≥ {threshold:.2f}).</div>',
-        unsafe_allow_html=True,
-    )
-else:
-    display_df = pred_df.copy()
+    st.markdown(f'<div class="info-banner">Showing <strong>{len(display_df):,}</strong> high-risk days (threshold ≥ {threshold:.2f}).</div>',
+                unsafe_allow_html=True)
 
-# Format for display
-table_df = display_df[['date', 'close', 'crash_prob', 'risk_level', 'actual_crash', 'predicted_crash']].copy()
-table_df.columns = ['Date', 'Close Price', 'Crash Probability', 'Risk Level', 'Actual Crash', 'Predicted Crash']
+table_df = display_df[['date','close','crash_prob','risk_level','actual_crash','predicted_crash']].copy()
+table_df.columns = ['Date','Close Price','Crash Probability','Risk Level','Actual Crash','Predicted Crash']
 table_df['Date']             = table_df['Date'].dt.strftime('%d %b %Y')
-table_df['Close Price']      = table_df['Close Price'].map('{:,.2f}'.format)
-table_df['Crash Probability'] = table_df['Crash Probability'].map('{:.4f}'.format)
+table_df['Close Price']      = table_df['Close Price'].map('₹{:,.2f}'.format)
+table_df['Crash Probability']= table_df['Crash Probability'].map('{:.4f}'.format)
 table_df['Actual Crash']     = table_df['Actual Crash'].map({0: '✗ No', 1: '✅ Yes'})
-table_df['Predicted Crash']  = table_df['Predicted Crash'].map({0: '—', 1: '⚠️ Alert'})
+table_df['Predicted Crash']  = table_df['Predicted Crash'].map({0: '—', 1: '⚠ Alert'})
 
-st.dataframe(table_df, use_container_width=True, hide_index=True, height=380)
-st.caption(f"Showing {len(table_df):,} rows · use the filter above to switch between All Days and High-Risk Only")
+st.dataframe(table_df, use_container_width=True, hide_index=True, height=360)
+st.caption(f"Showing {len(table_df):,} rows · toggle to High-Risk Only to filter")
 
-# ── Download CSV ──────────────────────────────────────────────────────────────
-st.markdown('<div class="section-hdr" style="margin-top:20px;"><h3>Download Results</h3></div>', unsafe_allow_html=True)
+# ── Download ──────────────────────────────────────────────────────────────────
+st.markdown('<div class="section-hdr" style="margin-top:20px;"><h3>Download Results</h3></div>',
+            unsafe_allow_html=True)
 
-@st.cache_data(show_spinner=False)
-def make_download_csv(pred_json: str, thresh: float, mkey: str) -> bytes:
-    import io as _io
-    df = pd.read_json(_io.StringIO(pred_json))
-    df['threshold_used'] = thresh
-    df['model'] = mkey
-    return df.to_csv(index=False).encode('utf-8')
-
-dl_df = pred_df[['date', 'close', 'crash_prob', 'predicted_crash', 'actual_crash', 'risk_level']].copy()
-dl_df.columns = ['date', 'close', 'crash_probability', 'predicted_crash', 'actual_crash', 'risk_level']
+dl_df = pred_df[['date','close','crash_prob','predicted_crash','actual_crash','risk_level']].copy()
+dl_df.columns = ['date','close','crash_probability','predicted_crash','actual_crash','risk_level']
 dl_df['threshold_used'] = threshold
-dl_df['model'] = model_choice
+dl_df['model']          = model_choice
 csv_bytes = dl_df.to_csv(index=False).encode('utf-8')
 
-dl_col1, dl_col2 = st.columns([1, 3])
-with dl_col1:
+dl1, dl2 = st.columns([1, 3])
+with dl1:
     st.download_button(
-        label="⬇️  Download Predictions CSV",
+        "⬇  Download Predictions CSV",
         data=csv_bytes,
-        file_name=f"crash_predictions_{model_key}_thresh{threshold:.2f}.csv",
+        file_name=f"crash_predictions_{model_key}_t{threshold:.2f}.csv",
         mime="text/csv",
         use_container_width=True,
     )
-with dl_col2:
+with dl2:
     st.markdown(
-        f"<div style='padding-top:8px; color:#6B7B8F; font-size:13px;'>"
-        f"CSV includes: date · close price · crash probability · predicted crash · actual crash · "
-        f"risk level · threshold used ({threshold:.2f}) · model ({model_choice})</div>",
+        f"<div style='padding-top:10px;color:#4A5568;font-size:12px;font-family:\"IBM Plex Mono\",monospace;'>"
+        f"date · close · crash_probability · predicted_crash · actual_crash · risk_level · threshold ({threshold:.2f}) · model</div>",
         unsafe_allow_html=True,
     )
 
-# ── Threshold guidance ────────────────────────────────────────────────────────
+# ── Threshold guide ───────────────────────────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
-with st.expander("📖 How to Interpret the Threshold", expanded=False):
+with st.expander("📖 Threshold Guide — How to Choose Your Operating Point"):
     st.markdown(f"""
     The **decision threshold** converts a continuous crash probability into a binary alert.
 
-    | Setting | Effect | Best For |
-    |---------|--------|----------|
-    | **Low (0.20 – 0.35)** | More alerts, higher recall, more false positives | Conservative investors who want to catch every possible crash |
-    | **Medium (0.40 – 0.55)** | Balanced precision & recall | General use · current F1-optimal = **{default_thresh:.2f}** |
-    | **High (0.65 – 0.80)** | Fewer alerts, higher precision, some crashes missed | Traders who prioritise signal quality over coverage |
+    | Threshold Range | Effect | Use Case |
+    |----------------|--------|----------|
+    | **0.20 – 0.35** | High recall, many alerts, more false positives | Conservative risk mgmt — catch every possible crash |
+    | **0.40 – 0.55** | Balanced · F1-optimal = **{default_thresh:.2f}** | General purpose · research benchmark |
+    | **0.65 – 0.85** | High precision, fewer alerts, some crashes missed | Signal-quality-focused trading strategies |
 
-    > *The F1-optimal threshold ({default_thresh:.2f}) was computed on the 2020–2023 test set
-    > to maximise the harmonic mean of precision and recall for crash detection.*
+    **Risk Level Bands:**
+    - <span class="risk-low">🟢 Low</span> — probability < 0.30 (unlikely crash)
+    - <span class="risk-medium">🟡 Medium</span> — 0.30–0.50 (elevated caution)
+    - <span class="risk-high">🟠 High</span> — 0.50–0.70 (significant risk signal)
+    - <span class="risk-vhigh">🔴 Very High</span> — ≥ 0.70 (strong crash precursor)
 
-    **Risk Level bands:**
-    - 🟢 **Low** — probability < 0.30 (unlikely crash)
-    - 🟡 **Medium** — 0.30 – 0.50 (elevated caution)
-    - 🟠 **High** — 0.50 – 0.70 (significant risk)
-    - 🔴 **Very High** — ≥ 0.70 (strong crash signal)
-    """)
+    > *The F1-optimal threshold ({default_thresh:.2f}) was chosen to maximise the harmonic mean of
+    > precision and recall on the 2020–2023 out-of-sample test set.*
+    """, unsafe_allow_html=True)
 
 # ── Navigation ────────────────────────────────────────────────────────────────
 st.markdown("---")
-nav1, nav2, nav3 = st.columns([2, 3, 2])
+nav1, _, nav3 = st.columns([2, 3, 2])
 with nav1:
     if st.button("← Back to Results", use_container_width=True):
         st.switch_page("pages/2_Results.py")
 with nav3:
     if st.button("⬆ Upload New Data", use_container_width=True):
-        # Clear session state so user can start fresh
-        for key in ['raw_df', 'df_feat', 'upload_complete', 'models_trained',
-                    'models', 'metrics', 'shap_vals', 'train_df', 'test_df']:
+        for key in ['raw_df','df_feat','upload_complete','models_trained',
+                    'models','metrics','shap_vals','train_df','test_df','train_complete']:
             st.session_state.pop(key, None)
         st.switch_page("pages/1_Upload.py")

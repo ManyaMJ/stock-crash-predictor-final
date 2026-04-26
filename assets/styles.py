@@ -1,300 +1,514 @@
 """
 assets/styles.py
 ────────────────
-Global CSS injected via st.markdown().
-Call inject_css() at the top of every page.
+Dark Trading Terminal theme — inject_css() + sidebar_header().
+Design: Bloomberg/TradingView inspired dark UI with neon accents.
 """
 
 import streamlit as st
 
 _CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-/* ── Global ─────────────────────────────────────────────────────────────── */
-html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
-.stApp { background-color: #F0F4FF; }
+/* ── CSS VARIABLES ───────────────────────────────────────────────────────── */
+:root {
+    --bg-0:   #070B12;
+    --bg-1:   #0A0E1A;
+    --bg-2:   #0F1629;
+    --bg-3:   #141C35;
+    --bg-4:   #1A2340;
+    --green:  #00D4AA;
+    --green2: #00FF88;
+    --red:    #FF3366;
+    --red2:   #FF6B8A;
+    --blue:   #4FACFE;
+    --gold:   #FFB700;
+    --purple: #8B5CF6;
+    --t0:     #F0F4FF;
+    --t1:     #B8C4D8;
+    --t2:     #6B7B8F;
+    --t3:     #3D4F63;
+    --bdr:    rgba(255,255,255,0.06);
+    --bdr-g:  rgba(0,212,170,0.22);
+    --glow:   0 0 24px rgba(0,212,170,0.10);
+}
 
-/* Hide Streamlit chrome */
+/* ── GLOBAL ──────────────────────────────────────────────────────────────── */
+html, body, [class*="css"] {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+}
+.stApp { background: var(--bg-1) !important; }
+.block-container { padding-top: 1.2rem !important; max-width: 1380px; }
+
+/* ── Hide chrome ─────────────────────────────────────────────────────────── */
 #MainMenu { visibility: hidden; }
 footer    { visibility: hidden; }
 header    { visibility: hidden; }
 
-/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+/* ── SIDEBAR ─────────────────────────────────────────────────────────────── */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0A1628 0%, #112240 100%);
-    border-right: 1px solid #1E3A5F;
+    background: var(--bg-0) !important;
+    border-right: 1px solid var(--bdr);
 }
-[data-testid="stSidebar"] p,
-[data-testid="stSidebar"] span,
-[data-testid="stSidebar"] label { color: #E8F0FE !important; }
+[data-testid="stSidebar"] * { color: var(--t1) !important; }
 
 [data-testid="stSidebarNav"] a {
-    color: #8BA3C1 !important;
-    font-size: 14px;
-    padding: 10px 16px;
-    border-radius: 8px;
-    margin: 3px 8px;
+    color: var(--t2) !important;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 9px 14px;
+    border-radius: 6px;
+    margin: 2px 8px;
     display: block;
     text-decoration: none;
-    transition: all 0.2s ease;
-    font-weight: 500;
+    transition: all 0.18s;
+    border-left: 2px solid transparent;
+    letter-spacing: 0.2px;
+    font-family: 'Inter', sans-serif !important;
 }
 [data-testid="stSidebarNav"] a:hover {
-    background-color: #1E3A5F;
-    color: #00C9A7 !important;
+    background: var(--bg-3) !important;
+    color: var(--green) !important;
+    border-left-color: var(--green);
 }
 [data-testid="stSidebarNav"] a[aria-selected="true"] {
-    background-color: #1E3A5F;
-    color: #00C9A7 !important;
-    border-left: 3px solid #00C9A7;
+    background: var(--bg-3) !important;
+    color: var(--green) !important;
+    border-left: 2px solid var(--green);
     font-weight: 600;
 }
 
-/* ── Buttons ─────────────────────────────────────────────────────────────── */
+/* ── BUTTONS ─────────────────────────────────────────────────────────────── */
 .stButton > button {
-    background-color: #00C9A7 !important;
-    color: #0A1628 !important;
+    background: linear-gradient(135deg, var(--green) 0%, #009E82 100%) !important;
+    color: #060A10 !important;
     border: none !important;
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-    font-size: 14px !important;
-    padding: 10px 28px !important;
-    transition: all 0.2s ease !important;
-    letter-spacing: 0.3px;
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    font-size: 11px !important;
+    padding: 10px 22px !important;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.2s !important;
+    box-shadow: 0 4px 16px rgba(0,212,170,0.28) !important;
+    font-family: 'Inter', sans-serif !important;
 }
 .stButton > button:hover {
-    background-color: #009E82 !important;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0,201,167,0.35) !important;
+    background: linear-gradient(135deg, var(--green2) 0%, var(--green) 100%) !important;
+    box-shadow: 0 6px 24px rgba(0,212,170,0.45) !important;
+    transform: translateY(-1px);
 }
-.stButton > button:active { transform: translateY(0); }
+.stButton > button:active { transform: translateY(0) !important; }
 
-/* Secondary / outline button style via extra class */
-.btn-secondary > button {
-    background-color: transparent !important;
-    color: #00C9A7 !important;
-    border: 2px solid #00C9A7 !important;
-}
-.btn-secondary > button:hover {
-    background-color: #E6FFF9 !important;
+[data-testid="stDownloadButton"] > button {
+    background: transparent !important;
+    color: var(--green) !important;
+    border: 1px solid var(--bdr-g) !important;
     box-shadow: none !important;
+    font-weight: 600 !important;
+}
+[data-testid="stDownloadButton"] > button:hover {
+    background: rgba(0,212,170,0.08) !important;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
-/* ── Tabs ────────────────────────────────────────────────────────────────── */
+/* ── TABS ────────────────────────────────────────────────────────────────── */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 4px;
-    background-color: #FFFFFF;
-    border-radius: 12px 12px 0 0;
-    padding: 8px 8px 0;
-    border-bottom: 2px solid #E0E8F5;
-    box-shadow: 0 1px 4px rgba(10,22,40,0.06);
+    background: var(--bg-2) !important;
+    border-radius: 8px 8px 0 0;
+    padding: 6px 6px 0;
+    border-bottom: 1px solid var(--bdr-g);
+    gap: 2px;
 }
 .stTabs [data-baseweb="tab"] {
-    background-color: transparent;
-    border-radius: 8px 8px 0 0;
-    color: #6B7B8F;
+    background: transparent !important;
+    color: var(--t2) !important;
+    font-size: 12px !important;
     font-weight: 500;
-    font-size: 14px;
-    padding: 8px 18px;
+    padding: 8px 16px;
+    border-radius: 6px 6px 0 0;
     border: none;
+    transition: all 0.18s;
+    white-space: nowrap;
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: 0.3px;
+}
+.stTabs [data-baseweb="tab"]:hover {
+    color: var(--green) !important;
+    background: var(--bg-3) !important;
+}
+.stTabs [aria-selected="true"] {
+    background: var(--bg-3) !important;
+    color: var(--green) !important;
+    font-weight: 700 !important;
+    border-bottom: 2px solid var(--green) !important;
+}
+
+/* ── METRICS ─────────────────────────────────────────────────────────────── */
+[data-testid="metric-container"] {
+    background: var(--bg-2) !important;
+    border: 1px solid var(--bdr-g);
+    border-radius: 8px;
+    padding: 14px 18px;
+    box-shadow: var(--glow);
     transition: all 0.2s;
 }
-.stTabs [data-baseweb="tab"]:hover { color: #00C9A7; }
-.stTabs [aria-selected="true"] {
-    background-color: #F0F4FF !important;
-    color: #00C9A7 !important;
-    font-weight: 600 !important;
-    border-bottom: 2px solid #00C9A7 !important;
+[data-testid="metric-container"]:hover {
+    border-color: var(--green);
+    box-shadow: 0 0 32px rgba(0,212,170,0.18);
+}
+[data-testid="metric-container"] label {
+    color: var(--t2) !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-family: 'IBM Plex Mono', monospace !important;
+}
+[data-testid="stMetricValue"] {
+    color: var(--t0) !important;
+    font-weight: 700 !important;
+    font-family: 'IBM Plex Mono', monospace !important;
+}
+[data-testid="stMetricDelta"] {
+    font-size: 11px !important;
+    font-family: 'IBM Plex Mono', monospace !important;
 }
 
-/* ── Metric tiles ────────────────────────────────────────────────────────── */
-[data-testid="metric-container"] {
-    background-color: #FFFFFF;
-    border: 1px solid #E0E8F5;
-    border-radius: 12px;
-    padding: 16px 20px;
-    box-shadow: 0 2px 8px rgba(10,22,40,0.06);
-}
-[data-testid="metric-container"] label { color: #8BA3C1 !important; font-size: 12px !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: 1px; }
-[data-testid="metric-container"] [data-testid="stMetricValue"] { color: #0A1628 !important; font-weight: 700 !important; }
-
-/* ── File uploader ───────────────────────────────────────────────────────── */
+/* ── FILE UPLOADER ───────────────────────────────────────────────────────── */
 [data-testid="stFileUploadDropzone"] {
-    background-color: #FFFFFF;
-    border: 2px dashed #00C9A7 !important;
-    border-radius: 12px !important;
-    padding: 24px !important;
+    background: var(--bg-2) !important;
+    border: 2px dashed var(--green) !important;
+    border-radius: 10px !important;
     transition: all 0.2s;
 }
 [data-testid="stFileUploadDropzone"]:hover {
-    background-color: #E6FFF9 !important;
-    border-color: #009E82 !important;
+    background: rgba(0,212,170,0.04) !important;
+    box-shadow: 0 0 40px rgba(0,212,170,0.1);
 }
 
-/* ── Expander ────────────────────────────────────────────────────────────── */
+/* ── EXPANDER ────────────────────────────────────────────────────────────── */
 [data-testid="stExpander"] {
-    background-color: #FFFFFF;
-    border: 1px solid #E0E8F5 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 2px 8px rgba(10,22,40,0.04);
-    margin-bottom: 8px;
-}
-
-/* ── DataFrames ──────────────────────────────────────────────────────────── */
-[data-testid="stDataFrame"] {
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid #E0E8F5;
-}
-
-/* ── Selectbox / Slider ──────────────────────────────────────────────────── */
-[data-testid="stSelectbox"] > div > div {
-    background-color: #FFFFFF !important;
-    border: 1px solid #D1D9E6 !important;
+    background: var(--bg-2) !important;
+    border: 1px solid var(--bdr) !important;
     border-radius: 8px !important;
+    margin-bottom: 8px;
+    transition: border-color 0.2s;
 }
-[data-testid="stSlider"] > div > div > div > div { background-color: #00C9A7; }
+[data-testid="stExpander"]:hover { border-color: var(--bdr-g) !important; }
 
-/* ── Progress bar ────────────────────────────────────────────────────────── */
-[data-testid="stProgress"] > div > div { background-color: #00C9A7 !important; }
+/* ── DATAFRAME ───────────────────────────────────────────────────────────── */
+[data-testid="stDataFrame"] {
+    border-radius: 8px;
+    border: 1px solid var(--bdr);
+    overflow: hidden;
+}
 
-/* ── Alert boxes ─────────────────────────────────────────────────────────── */
-[data-testid="stAlert"] { border-radius: 10px; }
+/* ── SELECTBOX ───────────────────────────────────────────────────────────── */
+[data-testid="stSelectbox"] > div > div {
+    background: var(--bg-2) !important;
+    border: 1px solid var(--bdr-g) !important;
+    border-radius: 6px !important;
+    color: var(--t0) !important;
+}
 
-/* ── Custom component classes ────────────────────────────────────────────── */
+/* ── SLIDER ──────────────────────────────────────────────────────────────── */
+[data-testid="stSlider"] > div > div > div > div { background: var(--green) !important; }
+
+/* ── PROGRESS ────────────────────────────────────────────────────────────── */
+[data-testid="stProgress"] > div > div {
+    background: linear-gradient(90deg, var(--green), var(--green2)) !important;
+}
+
+/* ── SCROLLBAR ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-1); }
+::-webkit-scrollbar-thumb { background: var(--bg-4); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--green); }
+
+/* ── HR ──────────────────────────────────────────────────────────────────── */
+hr { border: none; border-top: 1px solid var(--bdr); margin: 16px 0; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CUSTOM COMPONENT CLASSES
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── TICKER TAPE ─────────────────────────────────────────────────────────── */
+@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes blink  { 0%,100% { opacity:1; } 50% { opacity:0.15; } }
+@keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+@keyframes pulseGlow {
+    0%,100% { box-shadow: 0 0 20px rgba(0,212,170,0.10); }
+    50%      { box-shadow: 0 0 40px rgba(0,212,170,0.25); }
+}
+
+.ticker-wrap {
+    overflow: hidden;
+    background: var(--bg-0);
+    border-top: 1px solid var(--bdr-g);
+    border-bottom: 1px solid var(--bdr-g);
+    padding: 9px 0;
+    margin-bottom: 20px;
+    user-select: none;
+}
+.ticker { display: inline-flex; white-space: nowrap; animation: ticker 32s linear infinite; }
+.ticker:hover { animation-play-state: paused; }
+.t-item { display: inline-block; padding: 0 24px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; color: var(--t2); }
+.t-sym  { color: var(--t0); font-weight: 700; margin-right: 8px; }
+.t-pos  { color: var(--green); }
+.t-neg  { color: var(--red); }
+.t-div  { color: var(--t3); padding: 0 8px; }
+
+/* ── HERO ────────────────────────────────────────────────────────────────── */
 .hero-box {
-    background: linear-gradient(135deg, #0A1628 0%, #1E3A5F 60%, #0A1628 100%);
-    border-radius: 16px;
-    padding: 44px 40px;
-    margin-bottom: 28px;
-    border: 1px solid #1E3A5F;
+    background: linear-gradient(135deg, #06080F 0%, #0A1120 50%, #0E1C34 100%);
+    border: 1px solid var(--bdr-g);
+    border-radius: 14px;
+    padding: 52px 48px 44px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.45s ease;
+}
+.hero-box::before {
+    content: '';
+    position: absolute; top: -100px; right: -60px;
+    width: 520px; height: 520px;
+    background: radial-gradient(circle, rgba(0,212,170,0.07) 0%, transparent 65%);
+    pointer-events: none;
+}
+.hero-box::after {
+    content: '';
+    position: absolute; bottom: -80px; left: 5%;
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(79,172,254,0.04) 0%, transparent 65%);
+    pointer-events: none;
 }
 .hero-badge {
-    display: inline-block;
-    background: rgba(0,201,167,0.15);
-    color: #00C9A7;
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(0,212,170,0.09);
+    color: var(--green);
     padding: 5px 14px;
     border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    border: 1px solid rgba(0,201,167,0.3);
-    margin-bottom: 16px;
-    text-transform: uppercase;
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    border: 1px solid rgba(0,212,170,0.28);
+    margin-bottom: 22px; text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
+}
+.blink-dot {
+    width: 7px; height: 7px;
+    background: var(--green2); border-radius: 50%;
+    display: inline-block;
+    animation: blink 1.6s infinite;
+    flex-shrink: 0;
 }
 .hero-title {
-    font-size: 34px;
-    font-weight: 700;
-    color: #FFFFFF;
-    line-height: 1.25;
-    margin-bottom: 10px;
+    font-size: 46px; font-weight: 900; color: var(--t0);
+    line-height: 1.1; margin-bottom: 14px; letter-spacing: -1.5px;
 }
+.hero-title .accent { color: var(--green); }
 .hero-sub {
-    font-size: 16px;
-    color: #8BA3C1;
-    line-height: 1.6;
-    max-width: 680px;
-    margin-bottom: 24px;
+    font-size: 15px; color: var(--t2); line-height: 1.75;
+    max-width: 620px; margin-bottom: 36px;
 }
-.hero-stat {
-    display: inline-block;
-    margin-right: 32px;
-    margin-top: 8px;
+.hero-stats { display: flex; gap: 44px; flex-wrap: wrap; }
+.hero-stat  { display: flex; flex-direction: column; gap: 4px; }
+.hero-stat-val {
+    font-size: 30px; font-weight: 700; color: var(--green);
+    font-family: 'IBM Plex Mono', monospace; line-height: 1;
 }
-.hero-stat-val { font-size: 26px; font-weight: 700; color: #00C9A7; }
-.hero-stat-lbl { font-size: 12px; color: #8BA3C1; display: block; }
+.hero-stat-lbl {
+    font-size: 10px; color: var(--t2); text-transform: uppercase;
+    letter-spacing: 1.5px; font-weight: 600;
+}
 
+/* ── KPI CARD ────────────────────────────────────────────────────────────── */
 .kpi-card {
-    background: #FFFFFF;
-    border: 1px solid #E0E8F5;
-    border-radius: 12px;
-    padding: 20px 16px;
-    text-align: center;
-    box-shadow: 0 2px 8px rgba(10,22,40,0.06);
+    background: var(--bg-2); border: 1px solid var(--bdr); border-radius: 10px;
+    padding: 20px 16px; text-align: center;
+    transition: all 0.22s ease; position: relative; overflow: hidden; cursor: default;
 }
-.kpi-val { font-size: 30px; font-weight: 700; color: #00C9A7; }
-.kpi-lbl { font-size: 12px; color: #8BA3C1; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
-.kpi-sub { font-size: 11px; color: #6B7B8F; margin-top: 3px; }
+.kpi-card:hover {
+    border-color: var(--bdr-g); transform: translateY(-3px);
+    box-shadow: 0 14px 40px rgba(0,0,0,0.45), var(--glow);
+}
+.kpi-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    opacity: 0; transition: opacity 0.22s;
+}
+.kpi-card:hover::after { opacity: 1; }
+.kpi-val  { font-size: 26px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; line-height: 1.15; margin-bottom: 6px; }
+.kpi-lbl  { font-size: 10px; color: var(--t2); font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
+.kpi-sub  { font-size: 11px; color: var(--t2); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--bdr); line-height: 1.4; }
 
+/* ── STEP CARD ───────────────────────────────────────────────────────────── */
 .step-card {
-    background: #FFFFFF;
-    border: 1px solid #E0E8F5;
-    border-radius: 12px;
-    padding: 24px 20px;
-    box-shadow: 0 2px 8px rgba(10,22,40,0.05);
-    height: 100%;
+    background: var(--bg-2); border: 1px solid var(--bdr); border-radius: 10px;
+    padding: 24px 18px; transition: all 0.22s ease; height: 100%;
 }
+.step-card:hover { border-color: rgba(0,212,170,0.35); transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
 .step-num {
-    width: 38px; height: 38px;
-    background: #0A1628; color: #00C9A7;
-    border-radius: 50%;
+    width: 34px; height: 34px;
+    background: rgba(0,212,170,0.12); color: var(--green);
+    border: 1px solid rgba(0,212,170,0.35); border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 17px;
-    margin: 0 auto 14px;
+    font-weight: 700; font-size: 13px; font-family: 'IBM Plex Mono', monospace;
+    margin: 0 auto 16px;
 }
-.step-title { font-size: 15px; font-weight: 600; color: #1A2B45; margin-bottom: 8px; text-align: center; }
-.step-desc  { font-size: 13px; color: #6B7B8F; line-height: 1.55; text-align: center; }
+.step-title { font-size: 12px; font-weight: 700; color: var(--t0); margin-bottom: 10px; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
+.step-desc  { font-size: 12px; color: var(--t2); line-height: 1.65; text-align: center; }
 
+/* ── SECTION HEADER ──────────────────────────────────────────────────────── */
 .section-hdr {
-    border-left: 4px solid #00C9A7;
-    padding: 2px 0 2px 14px;
-    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 12px;
+    margin: 22px 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--bdr);
 }
-.section-hdr h2, .section-hdr h3 { margin: 0; color: #1A2B45; }
+.section-hdr h2, .section-hdr h3 { margin: 0; color: var(--t0); font-weight: 700; letter-spacing: -0.3px; }
 
+/* ── BANNERS ─────────────────────────────────────────────────────────────── */
 .info-banner {
-    background: #E6FFF9;
-    border: 1px solid #00C9A7;
-    border-radius: 10px;
-    padding: 14px 18px;
-    color: #007A5E;
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 16px;
+    background: rgba(0,212,170,0.07); border: 1px solid rgba(0,212,170,0.25);
+    border-left: 3px solid var(--green); border-radius: 8px;
+    padding: 12px 16px; color: #6EDEC8; font-size: 13px; font-weight: 500; margin-bottom: 16px;
 }
 .warn-banner {
-    background: #FFF8E8;
-    border: 1px solid #FFB703;
-    border-radius: 10px;
-    padding: 14px 18px;
-    color: #7A5800;
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 16px;
+    background: rgba(255,51,102,0.07); border: 1px solid rgba(255,51,102,0.25);
+    border-left: 3px solid var(--red); border-radius: 8px;
+    padding: 12px 16px; color: var(--red2); font-size: 13px; font-weight: 500; margin-bottom: 16px;
 }
+
+/* ── SIDEBAR STATUS ──────────────────────────────────────────────────────── */
+.sidebar-logo { padding: 20px 14px 16px; border-bottom: 1px solid var(--bdr); margin-bottom: 8px; text-align: center; }
+.sidebar-logo-title { color: var(--t0); font-size: 14px; font-weight: 700; margin-top: 8px; letter-spacing: -0.3px; }
+.sidebar-logo-sub   { color: var(--t2); font-size: 10px; margin-top: 3px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 1.5px; }
+.status-row { padding: 10px 14px; font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--t2); line-height: 2.0; }
+.s-on  { color: var(--green); font-weight: 600; }
+.s-off { color: var(--t3); }
+
+/* ── TERMINAL BOX ────────────────────────────────────────────────────────── */
+.term-box {
+    background: var(--bg-0); border: 1px solid var(--bdr-g); border-radius: 8px;
+    padding: 18px 20px; font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    color: var(--t1); line-height: 1.9;
+}
+.t-g { color: var(--green); } .t-r { color: var(--red); }
+.t-d { color: var(--t2); }   .t-b { color: var(--t0); font-weight: 600; }
+.t-gold { color: var(--gold); }
+
+/* ── INSIGHT PANEL ───────────────────────────────────────────────────────── */
+.insight-panel {
+    background: var(--bg-2); border: 1px solid var(--bdr);
+    border-left: 3px solid var(--green); border-radius: 10px;
+    padding: 18px 20px; margin-bottom: 12px;
+}
+.insight-label {
+    font-size: 10px; font-weight: 700; color: var(--green);
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 7px;
+    font-family: 'IBM Plex Mono', monospace;
+}
+.insight-text { font-size: 13px; color: var(--t1); line-height: 1.65; }
+
+/* ── CRASH EVENT ─────────────────────────────────────────────────────────── */
+.crash-event {
+    background: var(--bg-2); border: 1px solid var(--bdr);
+    border-left: 3px solid var(--red); border-radius: 8px;
+    padding: 14px 16px; margin-bottom: 8px; transition: all 0.2s;
+}
+.crash-event:hover { border-color: rgba(255,51,102,0.45); }
+.crash-event-date { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--red); font-weight: 600; }
+.crash-event-name { font-size: 13px; font-weight: 700; color: var(--t0); margin: 4px 0 2px; }
+.crash-event-desc { font-size: 12px; color: var(--t2); }
+
+/* ── FEATURE PILL ────────────────────────────────────────────────────────── */
+.feat-pill {
+    display: inline-block; background: rgba(0,212,170,0.08); color: var(--green);
+    border: 1px solid rgba(0,212,170,0.2); padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; margin: 2px;
+}
+
+/* ── MODEL TAG ───────────────────────────────────────────────────────────── */
 .model-tag {
-    display: inline-block;
-    background: #0A1628;
-    color: #00C9A7;
-    padding: 3px 10px;
-    border-radius: 5px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    margin-right: 6px;
+    display: inline-block; background: rgba(0,212,170,0.09); color: var(--green);
+    border: 1px solid rgba(0,212,170,0.25); padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.8px; margin-right: 4px;
 }
-.sidebar-logo {
-    text-align: center;
-    padding: 20px 16px 12px;
-    border-bottom: 1px solid #1E3A5F;
-    margin-bottom: 8px;
+
+/* ── STATUS BADGE ────────────────────────────────────────────────────────── */
+.badge-live {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(0,255,136,0.09); color: var(--green2);
+    border: 1px solid rgba(0,255,136,0.25); padding: 3px 10px; border-radius: 12px;
+    font-size: 10px; font-weight: 700; font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 1px; text-transform: uppercase;
 }
-.sidebar-logo-title {
-    color: #FFFFFF;
-    font-size: 15px;
-    font-weight: 700;
-    margin-top: 8px;
-    line-height: 1.3;
-}
-.sidebar-logo-sub {
-    color: #8BA3C1;
-    font-size: 11px;
-    margin-top: 3px;
-}
-.status-dot-green::before { content: "●"; color: #00C9A7; margin-right: 6px; }
-.status-dot-gray::before  { content: "●"; color: #8BA3C1; margin-right: 6px; }
+
+/* ── RISK LEVEL COLOURS ──────────────────────────────────────────────────── */
+.risk-vhigh  { color: #FF3366; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+.risk-high   { color: #FF8C42; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+.risk-medium { color: #FFB700; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+.risk-low    { color: var(--green); font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
 </style>
+"""
+
+_TICKER_HTML = """
+<div class="ticker-wrap">
+  <div class="ticker">
+    <span class="t-item"><span class="t-sym">NIFTY 50</span><span class="t-pos">▲ 22,345.60 &nbsp;+0.62%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">SENSEX</span><span class="t-pos">▲ 73,428.10 &nbsp;+0.55%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">BANKNIFTY</span><span class="t-pos">▲ 48,102.85 &nbsp;+0.83%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">NIFTY IT</span><span class="t-neg">▼ 34,105.30 &nbsp;-0.21%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">NIFTY AUTO</span><span class="t-pos">▲ 19,872.45 &nbsp;+1.14%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">NIFTY PHARMA</span><span class="t-pos">▲ 15,930.20 &nbsp;+0.37%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">NIFTY FMCG</span><span class="t-neg">▼ 20,145.70 &nbsp;-0.09%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">NIFTY METAL</span><span class="t-pos">▲ 8,034.15 &nbsp;+1.82%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">VIX</span><span class="t-neg">▼ 13.45 &nbsp;-4.2%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">USD/INR</span><span class="t-neg">▲ 83.42 &nbsp;+0.08%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">GOLD</span><span class="t-pos">▲ 71,230 &nbsp;+0.43%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">CRUDE OIL</span><span class="t-neg">▼ 6,812 &nbsp;-0.61%</span></span>
+    <span class="t-item t-div">│</span>
+    <!-- duplicate for seamless loop -->
+    <span class="t-item"><span class="t-sym">NIFTY 50</span><span class="t-pos">▲ 22,345.60 &nbsp;+0.62%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">SENSEX</span><span class="t-pos">▲ 73,428.10 &nbsp;+0.55%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">BANKNIFTY</span><span class="t-pos">▲ 48,102.85 &nbsp;+0.83%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">NIFTY IT</span><span class="t-neg">▼ 34,105.30 &nbsp;-0.21%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">NIFTY AUTO</span><span class="t-pos">▲ 19,872.45 &nbsp;+1.14%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">NIFTY PHARMA</span><span class="t-pos">▲ 15,930.20 &nbsp;+0.37%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">NIFTY FMCG</span><span class="t-neg">▼ 20,145.70 &nbsp;-0.09%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">NIFTY METAL</span><span class="t-pos">▲ 8,034.15 &nbsp;+1.82%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">VIX</span><span class="t-neg">▼ 13.45 &nbsp;-4.2%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">USD/INR</span><span class="t-neg">▲ 83.42 &nbsp;+0.08%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">GOLD</span><span class="t-pos">▲ 71,230 &nbsp;+0.43%</span></span>
+    <span class="t-item t-div">│</span>
+    <span class="t-item"><span class="t-sym">CRUDE OIL</span><span class="t-neg">▼ 6,812 &nbsp;-0.61%</span></span>
+    <span class="t-item t-div">│</span>
+  </div>
+</div>
 """
 
 
@@ -302,29 +516,27 @@ def inject_css():
     st.markdown(_CSS, unsafe_allow_html=True)
 
 
+def ticker_tape():
+    st.markdown(_TICKER_HTML, unsafe_allow_html=True)
+
+
 def sidebar_header():
-    """Render branded sidebar header + data/model status."""
-    import streamlit as st
     with st.sidebar:
         st.markdown("""
         <div class="sidebar-logo">
-            <div style="font-size:28px;">📈</div>
+            <div style="font-size:26px;">📈</div>
             <div class="sidebar-logo-title">Crash Predictor</div>
-            <div class="sidebar-logo-sub">NIFTY 50 · Explainable ML</div>
+            <div class="sidebar-logo-sub">NIFTY 50 · XAI · 2026</div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Status
-        data_ok  = 'df_feat' in st.session_state
-        model_ok = 'metrics' in st.session_state
+        data_ok  = 'df_feat'  in st.session_state
+        model_ok = 'metrics'  in st.session_state
+
         st.markdown(f"""
-        <div style="padding:12px 16px; font-size:13px;">
-            <div class="{'status-dot-green' if data_ok  else 'status-dot-gray'}">
-                {'Data ready' if data_ok  else 'No data uploaded'}
-            </div>
-            <div style="margin-top:6px" class="{'status-dot-green' if model_ok else 'status-dot-gray'}">
-                {'Models trained' if model_ok else 'Models not trained'}
-            </div>
+        <div class="status-row">
+            <div><span class="{'s-on' if data_ok  else 's-off'}">{'● DATA LOADED' if data_ok  else '○ NO DATA'}</span></div>
+            <div><span class="{'s-on' if model_ok else 's-off'}">{'● MODELS READY' if model_ok else '○ NOT TRAINED'}</span></div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("---")
