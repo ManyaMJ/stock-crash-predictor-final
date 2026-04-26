@@ -145,10 +145,10 @@ n_total     = len(pred_df)
 n_alerts    = int(pred_df['predicted_crash'].sum())
 n_actual    = int(pred_df['actual_crash'].sum())
 alert_rate  = n_alerts / n_total * 100
+correct_caught = int(
+    ((pred_df['predicted_crash'] == 1) & (pred_df['actual_crash'] == 1)).sum()
+)
 if n_actual > 0:
-    correct_caught = int(
-        ((pred_df['predicted_crash'] == 1) & (pred_df['actual_crash'] == 1)).sum()
-    )
     recall_pct = correct_caught / n_actual * 100
 else:
     recall_pct = 0.0

@@ -47,20 +47,14 @@ def price_chart(df: pd.DataFrame) -> go.Figure:
         line=dict(color='#0A1628', width=1.5),
         hovertemplate='%{x|%d %b %Y}<br>Close: %{y:,.2f}<extra></extra>',
     ))
-    # Shade crash days
+    # Mark crash days as red dots on the price line
     if 'crash' in df.columns:
         crash_days = df[df['crash'] == 1]
-        for _, row in crash_days.iterrows():
-            fig.add_vrect(
-                x0=row['date'], x1=row['date'],
-                fillcolor='#FF6B6B', opacity=0.15,
-                line_width=0,
-            )
-        # Add a dummy trace for legend
         fig.add_trace(go.Scatter(
-            x=[None], y=[None], mode='markers',
-            marker=dict(color='#FF6B6B', size=10, symbol='square'),
-            name='Crash Day',
+            x=crash_days['date'], y=crash_days['close'],
+            mode='markers', name='Crash Day',
+            marker=dict(color='#FF6B6B', size=5, symbol='circle'),
+            hovertemplate='%{x|%d %b %Y}<br>CRASH DAY · Close: %{y:,.2f}<extra></extra>',
         ))
     fig.update_layout(hovermode='x unified', showlegend=True)
     return fig

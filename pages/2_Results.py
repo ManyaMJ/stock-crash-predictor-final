@@ -89,7 +89,8 @@ if do_train:
     st.session_state['train_df']   = train_df
     st.session_state['test_df']    = test_df
     st.session_state['rolling_df'] = rolling_df
-    st.session_state['train_complete'] = True
+    st.session_state['train_complete']  = True
+    st.session_state['models_trained']  = True
     already_trained = True
 
 # ── Results ───────────────────────────────────────────────────────────────────
