@@ -186,7 +186,7 @@ def crash_distribution(df: pd.DataFrame) -> go.Figure:
     ))
     fig.update_layout(
         yaxis_title='Trading Days', showlegend=False, bargap=0.5,
-        yaxis=dict(gridcolor='rgba(255,255,255,0.04)', **_AXIS),
+        yaxis=dict(**_AXIS),
     )
     return fig
 

@@ -110,6 +110,12 @@ if uploaded is not None:
     Momentum · Bollinger Bands · Volume · Candlestick
     </div>""", unsafe_allow_html=True)
 
+    # Save session state immediately after feature engineering so Results page
+    # always sees the data regardless of which chart tab the user opens.
+    st.session_state['raw_df']          = df_raw
+    st.session_state['df_feat']         = df_feat
+    st.session_state['upload_complete'] = True
+
     # ── Chart tabs ────────────────────────────────────────────────────────────
     st.markdown('<div class="section-hdr" style="margin-top:20px;"><h3>Visual Exploration</h3></div>',
                 unsafe_allow_html=True)
@@ -177,11 +183,6 @@ if uploaded is not None:
             Check ATR-14 and Vol-20d for the widest spreads.
             </div>
         </div>""", unsafe_allow_html=True)
-
-    # ── Save to session state ─────────────────────────────────────────────────
-    st.session_state['raw_df']          = df_raw
-    st.session_state['df_feat']         = df_feat
-    st.session_state['upload_complete'] = True
 
     st.markdown("---")
     st.markdown('<div class="section-hdr"><h3>Ready to Train?</h3></div>', unsafe_allow_html=True)
