@@ -212,7 +212,8 @@ st.markdown('<div class="section-hdr" style="margin-top:20px;"><h3>Download Resu
 
 @st.cache_data(show_spinner=False)
 def make_download_csv(pred_json: str, thresh: float, mkey: str) -> bytes:
-    df = pd.read_json(pred_json)
+    import io as _io
+    df = pd.read_json(_io.StringIO(pred_json))
     df['threshold_used'] = thresh
     df['model'] = mkey
     return df.to_csv(index=False).encode('utf-8')

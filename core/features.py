@@ -120,7 +120,8 @@ def engineer_features(df_json: str) -> pd.DataFrame:
     Input is JSON string so Streamlit can cache it by content hash.
     Returns DataFrame with original columns + 25 features + 'crash' label.
     """
-    df = pd.read_json(df_json)
+    import io as _io
+    df = pd.read_json(_io.StringIO(df_json))
     if 'date' in df.columns:
         df['date'] = pd.to_datetime(df['date'])
     df = df.sort_values('date').reset_index(drop=True)
