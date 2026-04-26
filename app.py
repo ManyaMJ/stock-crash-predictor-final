@@ -9,7 +9,7 @@ labels without renaming files.
 import streamlit as st
 
 st.set_page_config(
-    page_title="NIFTY 50 Crash Predictor",
+    page_title="Market Crash Predictor",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded",

@@ -254,7 +254,7 @@ hr { border: none; border-top: 1px solid var(--bdr); margin: 16px 0; }
     margin-bottom: 20px;
     user-select: none;
 }
-.ticker { display: inline-flex; white-space: nowrap; animation: ticker 32s linear infinite; }
+.ticker { display: inline-flex; white-space: nowrap; animation: ticker 52s linear infinite; }
 .ticker:hover { animation-play-state: paused; }
 .t-item { display: inline-block; padding: 0 24px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; color: var(--t2); }
 .t-sym  { color: var(--t0); font-weight: 700; margin-right: 8px; }
@@ -455,61 +455,78 @@ hr { border: none; border-top: 1px solid var(--bdr); margin: 16px 0; }
 </style>
 """
 
-_TICKER_HTML = """
-<div class="ticker-wrap">
+# ── Live market data ─────────────────────────────────────────────────────────
+_TICKER_SYMBOLS = [
+    ("^GSPC",  "S&P 500",   "{:,.2f}"),
+    ("^IXIC",  "NASDAQ",    "{:,.2f}"),
+    ("^DJI",   "DOW JONES", "{:,.2f}"),
+    ("^NSEI",  "NIFTY 50",  "{:,.2f}"),
+    ("^BSESN", "SENSEX",    "{:,.2f}"),
+    ("CL=F",   "CRUDE OIL", "${:.2f}"),
+    ("GC=F",   "GOLD",      "${:,.2f}"),
+    ("SI=F",   "SILVER",    "${:.3f}"),
+]
+
+# Fallback values shown when yfinance is unreachable
+_FALLBACK = {
+    "^GSPC":  (5_248.49,  0.32),
+    "^IXIC":  (16_399.95, 0.18),
+    "^DJI":   (39_512.84, 0.40),
+    "^NSEI":  (22_345.60, 0.62),
+    "^BSESN": (73_428.10, 0.55),
+    "CL=F":   (83.18,    -0.61),
+    "GC=F":   (2_338.60,  0.43),
+    "SI=F":   (27.485,    0.71),
+}
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _fetch_market_data() -> dict:
+    """Fetch latest price + daily % change for all ticker symbols. TTL = 5 min."""
+    try:
+        import yfinance as yf
+        tickers = [s for s, _, _ in _TICKER_SYMBOLS]
+        raw = yf.download(tickers, period="2d", interval="1d",
+                          progress=False, auto_adjust=True)
+        result = {}
+        for sym, _, _ in _TICKER_SYMBOLS:
+            try:
+                closes = raw["Close"][sym].dropna()
+                if len(closes) >= 2:
+                    price = float(closes.iloc[-1])
+                    prev  = float(closes.iloc[-2])
+                    pct   = (price - prev) / prev * 100
+                else:
+                    price, pct = _FALLBACK[sym]
+            except Exception:
+                price, pct = _FALLBACK[sym]
+            result[sym] = (price, pct)
+        return result
+    except Exception:
+        return {sym: _FALLBACK[sym] for sym, _, _ in _TICKER_SYMBOLS}
+
+
+def _build_ticker_html(data: dict) -> str:
+    items = []
+    for sym, label, fmt in _TICKER_SYMBOLS:
+        price, pct = data.get(sym, _FALLBACK[sym])
+        arrow = "▲" if pct >= 0 else "▼"
+        css   = "t-pos" if pct >= 0 else "t-neg"
+        sign  = "+" if pct >= 0 else ""
+        price_str = fmt.format(price)
+        items.append(
+            f'<span class="t-item"><span class="t-sym">{label}</span>'
+            f'<span class="{css}">{arrow} {price_str} &nbsp;{sign}{pct:.2f}%</span></span>'
+            f'<span class="t-item t-div">│</span>'
+        )
+    inner = "\n    ".join(items)
+    # duplicate for seamless CSS loop
+    return f"""<div class="ticker-wrap">
   <div class="ticker">
-    <span class="t-item"><span class="t-sym">NIFTY 50</span><span class="t-pos">▲ 22,345.60 &nbsp;+0.62%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">SENSEX</span><span class="t-pos">▲ 73,428.10 &nbsp;+0.55%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">BANKNIFTY</span><span class="t-pos">▲ 48,102.85 &nbsp;+0.83%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">NIFTY IT</span><span class="t-neg">▼ 34,105.30 &nbsp;-0.21%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">NIFTY AUTO</span><span class="t-pos">▲ 19,872.45 &nbsp;+1.14%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">NIFTY PHARMA</span><span class="t-pos">▲ 15,930.20 &nbsp;+0.37%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">NIFTY FMCG</span><span class="t-neg">▼ 20,145.70 &nbsp;-0.09%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">NIFTY METAL</span><span class="t-pos">▲ 8,034.15 &nbsp;+1.82%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">VIX</span><span class="t-neg">▼ 13.45 &nbsp;-4.2%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">USD/INR</span><span class="t-neg">▲ 83.42 &nbsp;+0.08%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">GOLD</span><span class="t-pos">▲ 71,230 &nbsp;+0.43%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">CRUDE OIL</span><span class="t-neg">▼ 6,812 &nbsp;-0.61%</span></span>
-    <span class="t-item t-div">│</span>
-    <!-- duplicate for seamless loop -->
-    <span class="t-item"><span class="t-sym">NIFTY 50</span><span class="t-pos">▲ 22,345.60 &nbsp;+0.62%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">SENSEX</span><span class="t-pos">▲ 73,428.10 &nbsp;+0.55%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">BANKNIFTY</span><span class="t-pos">▲ 48,102.85 &nbsp;+0.83%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">NIFTY IT</span><span class="t-neg">▼ 34,105.30 &nbsp;-0.21%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">NIFTY AUTO</span><span class="t-pos">▲ 19,872.45 &nbsp;+1.14%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">NIFTY PHARMA</span><span class="t-pos">▲ 15,930.20 &nbsp;+0.37%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">NIFTY FMCG</span><span class="t-neg">▼ 20,145.70 &nbsp;-0.09%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">NIFTY METAL</span><span class="t-pos">▲ 8,034.15 &nbsp;+1.82%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">VIX</span><span class="t-neg">▼ 13.45 &nbsp;-4.2%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">USD/INR</span><span class="t-neg">▲ 83.42 &nbsp;+0.08%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">GOLD</span><span class="t-pos">▲ 71,230 &nbsp;+0.43%</span></span>
-    <span class="t-item t-div">│</span>
-    <span class="t-item"><span class="t-sym">CRUDE OIL</span><span class="t-neg">▼ 6,812 &nbsp;-0.61%</span></span>
-    <span class="t-item t-div">│</span>
+    {inner}
+    {inner}
   </div>
-</div>
-"""
+</div>"""
 
 
 def inject_css():
@@ -517,7 +534,8 @@ def inject_css():
 
 
 def ticker_tape():
-    st.markdown(_TICKER_HTML, unsafe_allow_html=True)
+    data = _fetch_market_data()
+    st.markdown(_build_ticker_html(data), unsafe_allow_html=True)
 
 
 def sidebar_header():
@@ -526,8 +544,8 @@ def sidebar_header():
         st.markdown("""
         <div class="sidebar-logo">
             <div style="font-size:26px;">📈</div>
-            <div class="sidebar-logo-title">Crash Predictor</div>
-            <div class="sidebar-logo-sub">NIFTY 50 · XAI · 2026</div>
+            <div class="sidebar-logo-title">Market Crash Predictor</div>
+            <div class="sidebar-logo-sub">Global Markets · XAI · 2026</div>
         </div>
         """, unsafe_allow_html=True)
 

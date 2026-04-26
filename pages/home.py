@@ -15,11 +15,12 @@ ticker_tape()
 st.markdown("""
 <div class="hero-box">
   <div class="hero-badge"><span class="blink-dot"></span>&nbsp;LIVE RESEARCH TOOL &nbsp;·&nbsp; CHITKARA UNIVERSITY &nbsp;·&nbsp; 2026</div>
-  <div class="hero-title">NIFTY 50 <span class="accent">Crash</span><br>Predictor</div>
+  <div class="hero-title">Market <span class="accent">Crash</span><br>Predictor</div>
   <div class="hero-sub">
     An explainable machine-learning framework that identifies pre-crash market conditions
-    in NIFTY 50 data. Upload your OHLCV CSV, train five classifiers in seconds, and
-    interrogate every prediction with SHAP-based feature attribution.
+    in any OHLCV equity market — NIFTY 50, S&amp;P 500, Nasdaq, Dow Jones, and beyond.
+    Upload your CSV, train five classifiers in seconds, and interrogate every prediction
+    with SHAP-based feature attribution.
   </div>
   <div class="hero-stats">
     <div class="hero-stat"><span class="hero-stat-val">0.627</span><span class="hero-stat-lbl">Ensemble ROC-AUC</span></div>
@@ -43,7 +44,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 st.markdown('<div class="section-hdr"><h3>How It Works</h3></div>', unsafe_allow_html=True)
 cols = st.columns(4)
 steps = [
-    ("01", "Upload CSV",     "Drag & drop your NIFTY 50 OHLCV file. The app auto-detects columns, validates, and engineers all 25 technical features instantly."),
+    ("01", "Upload CSV",     "Drag & drop any OHLCV CSV — NIFTY 50, S&P 500, Nasdaq, Sensex, or any equity market. Auto-detects columns, validates, and engineers all 25 technical features instantly."),
     ("02", "Train Models",   "One click trains all five classifiers — DT, LR, RF, XGBoost, and the Soft-Voting Ensemble — with SMOTE class balancing."),
     ("03", "Explore Results","Dive into ROC curves, confusion matrices, PR curves, SHAP feature importance, and rolling-window temporal F1 — all interactive."),
     ("04", "Get Predictions","See crash probability on a live timeline. Adjust the decision threshold and download your full prediction CSV."),
@@ -206,7 +207,7 @@ with st.expander("📚 Key References", expanded=False):
     | Pelletier & Loiseau (2023) | Ensemble methods consistently outperform single estimators |
 
     **Research gap addressed:** No prior work applies a soft-voting ensemble with SHAP
-    to NIFTY 50 crash prediction with rigorous rolling-window temporal validation.
+    to equity market crash prediction with rigorous rolling-window temporal validation.
     """)
 
 st.markdown("---")
