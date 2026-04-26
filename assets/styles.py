@@ -521,6 +521,7 @@ def ticker_tape():
 
 
 def sidebar_header():
+    import os, pathlib
     with st.sidebar:
         st.markdown("""
         <div class="sidebar-logo">
@@ -540,3 +541,21 @@ def sidebar_header():
         </div>
         """, unsafe_allow_html=True)
         st.markdown("---")
+
+        # Sample CSV download — file lives at project_root/sample_data/
+        _sample = pathlib.Path(__file__).parent.parent / "sample_data" / "NIFTY50_sample_2022_2024.csv"
+        if _sample.exists():
+            st.download_button(
+                label="⬇ Download Sample CSV",
+                data=_sample.read_bytes(),
+                file_name="NIFTY50_sample_2022_2024.csv",
+                mime="text/csv",
+                use_container_width=True,
+                help="500-day NIFTY 50 sample in NSE format — ready to upload",
+            )
+            st.markdown(
+                "<div style='font-size:10px;color:#3D4F63;text-align:center;margin-top:4px;'>"
+                "NSE format · 500 trading days · 2022–2024</div>",
+                unsafe_allow_html=True,
+            )
+            st.markdown("---")

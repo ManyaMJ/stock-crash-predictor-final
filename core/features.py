@@ -72,14 +72,22 @@ def load_and_validate(uploaded_file):
     # Normalise column names
     df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
 
-    # Accept common column name variants
+    # Accept common column name variants (including NSE India export format)
     aliases = {
-        'adj_close': 'close', 'adj close': 'close',
-        'closing_price': 'close', 'price': 'close',
+        'adj_close': 'close', 'adj_close_price': 'close',
+        'closing_price': 'close', 'price': 'close', 'ltp': 'close',
         'vol': 'volume', 'v': 'volume',
+        'shares_traded': 'volume', 'quantity': 'volume', 'no_of_shares': 'volume',
         'datetime': 'date', 'time': 'date', 'timestamp': 'date',
+        'series': None,            # NSE "Series" column — drop
+        'turnover_(₹_cr)': None,  # NSE turnover column (unicode) — drop
+        'turnover_(rs_cr)': None,  # NSE turnover column (ascii) — drop
+        'turnover': None,
     }
+    # Rename known columns; drop columns mapped to None (e.g. NSE "Series", "Turnover")
     df = df.rename(columns=lambda c: aliases.get(c, c))
+    cols_to_drop = [c for c in df.columns if c is None]
+    df = df.drop(columns=cols_to_drop, errors='ignore')
 
     # Required columns
     for col in ['open', 'high', 'low', 'close']:
@@ -107,8 +115,15 @@ def load_and_validate(uploaded_file):
 
     df = df.dropna(subset=['open', 'high', 'low', 'close']).reset_index(drop=True)
 
-    if len(df) < 100:
-        return None, f"Dataset has only {len(df)} valid rows. Need at least 100."
+    # Minimum rows needed for longest rolling window (MA-50) + crash label (5-day forward)
+    MIN_ROWS = 60
+    if len(df) < MIN_ROWS:
+        return None, (
+            f"Dataset has only **{len(df)} rows** after cleaning. "
+            f"At least **{MIN_ROWS} trading days** are needed to compute "
+            f"50-day moving averages and 5-day forward crash labels. "
+            f"Please upload a longer history — see the sample CSV in the sidebar."
+        )
 
     return df[['date', 'open', 'high', 'low', 'close', 'volume']], None
 
