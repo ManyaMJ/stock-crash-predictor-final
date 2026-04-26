@@ -158,14 +158,20 @@ with tab1:
         })
 
     tbl = pd.DataFrame(rows)
-    tbl_styled = tbl.style \
-        .background_gradient(subset=['ROC-AUC'], cmap='YlGn') \
-        .background_gradient(subset=['Recall'],  cmap='YlOrRd') \
-        .highlight_max(subset=['ROC-AUC', 'Recall', 'F1-Score', 'Accuracy'], color='#E6FFF9') \
-        .format({c: '{:.4f}' for c in tbl.columns if c != 'Model'}) \
-        .set_properties(**{'font-size': '13px'})
-
-    st.dataframe(tbl_styled, use_container_width=True, hide_index=True)
+    st.dataframe(
+        tbl,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Model":     st.column_config.TextColumn("Model"),
+            "Accuracy":  st.column_config.NumberColumn("Accuracy",  format="%.4f"),
+            "Precision": st.column_config.NumberColumn("Precision", format="%.4f"),
+            "Recall":    st.column_config.NumberColumn("Recall",    format="%.4f"),
+            "F1-Score":  st.column_config.NumberColumn("F1-Score",  format="%.4f"),
+            "ROC-AUC":   st.column_config.NumberColumn("ROC-AUC",   format="%.4f"),
+            "Avg Prec":  st.column_config.NumberColumn("Avg Prec",  format="%.4f"),
+        },
+    )
 
     # Download
     csv = tbl.to_csv(index=False)
